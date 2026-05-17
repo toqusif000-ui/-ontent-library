@@ -519,12 +519,6 @@
 
 <div class="app">
 
-  <!-- TABS HEADER -->
-  <div class="tabs-header">
-    <button class="tab-btn active" data-tab="ideas">Идеи</button>
-    <button class="tab-btn" data-tab="stories">Сюжеты</button>
-  </div>
-
   <!-- SIDEBAR: список дней -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-label">Дни</div>
@@ -564,6 +558,15 @@
       <span class="day-dot"></span>
     </button>
   </nav>
+
+  <!-- CONTENT WRAPPER -->
+  <div class="content-wrapper">
+
+  <!-- TABS HEADER -->
+  <div class="tabs-header">
+    <button class="tab-btn active" data-tab="ideas">Идеи</button>
+    <button class="tab-btn" data-tab="stories">Сториз</button>
+  </div>
 
   <!-- MAIN: карта -->
   <main class="main" id="main">
@@ -621,6 +624,8 @@
     <div class="story-ideas-title" id="story-ideas-title"></div>
     <div id="story-ideas-list"></div>
   </div>
+
+  </div><!-- /content-wrapper -->
 
 </div>
 
@@ -1643,6 +1648,13 @@ if (firstDay) selectDay(firstDay);
 .tab-btn.active {
   background: #D97757;
   color: white;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* Раздел сюжетов */
