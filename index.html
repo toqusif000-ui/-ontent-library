@@ -1506,14 +1506,14 @@ if (firstDay) selectDay(firstDay);
     const userMessage  = `Идея: ${foIdeaText}\nФормат: ${foFmtName}\nТип контента: ${foTypeLabel}\nНапиши конкретный сценарий под эту идею.`;
 
     try {
-      const res = await fetch('https://api.scarlex.ru/v1/chat/completions', {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer sk-scarlex-494bbe0f579528b32c7e496c694eb912',
+          'Authorization': 'Bearer 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',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user',   content: userMessage  },
