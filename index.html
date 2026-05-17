@@ -626,11 +626,26 @@
     <div id="story-ideas-list"></div>
   </div>
 
-  <!-- СТОРИЗ: заглушка -->
+  <!-- СТОРИЗ -->
   <div id="storiz-view">
-    <div class="placeholder">
-      <div class="placeholder-icon">🌿</div>
-      <div class="placeholder-title">Скоро появится</div>
+    <!-- Шаг 1: дни -->
+    <div id="storiz-days">
+      <div class="storiz-section-title">Выбери день</div>
+      <div class="storiz-days-grid">
+        <div class="storiz-day-card disabled"><span class="storiz-day-name">Пн</span><span class="storiz-day-soon">скоро</span></div>
+        <div class="storiz-day-card" data-day="tue"><span class="storiz-day-name">Вт</span></div>
+        <div class="storiz-day-card" data-day="wed"><span class="storiz-day-name">Ср</span></div>
+        <div class="storiz-day-card" data-day="thu"><span class="storiz-day-name">Чт</span></div>
+        <div class="storiz-day-card disabled"><span class="storiz-day-name">Пт</span><span class="storiz-day-soon">скоро</span></div>
+        <div class="storiz-day-card disabled"><span class="storiz-day-name">Сб</span><span class="storiz-day-soon">скоро</span></div>
+        <div class="storiz-day-card disabled"><span class="storiz-day-name">Вс</span><span class="storiz-day-soon">скоро</span></div>
+      </div>
+    </div>
+    <!-- Шаг 2: темы -->
+    <div id="storiz-topics">
+      <button class="storiz-back" id="storiz-back">← Назад к дням</button>
+      <div class="storiz-section-title" id="storiz-topics-title"></div>
+      <div id="storiz-topics-list"></div>
     </div>
   </div>
 
@@ -1611,9 +1626,85 @@ if (firstDay) selectDay(firstDay);
     }
   }
 
+  const STORIZ_SYSTEM_PROMPT = `Ты эксперт по Instagram Stories 2026 года и помощник Даши — кондитера с пятилетним опытом. Пиши живо, по-человечески, с юмором, как подруга подруге.
+
+ГЛАВНОЕ ЧТО ТЫ ЗНАЕШЬ ОБ АЛГОРИТМЕ:
+- Главный сигнал — пересылки в Direct. Делай контент который захочется переслать подруге
+- 72% смотрят без звука — всегда предлагай текст на экране
+- Лучший знак качества — когда человек возвращается пересмотреть
+- Публиковать 5-8 сториз в день блоками, пауза 3-4 часа
+- Утро 08:30-09:30, вечер 19:00-21:00
+
+ЧТО НЕЛЬЗЯ ДЕЛАТЬ:
+- Много фото подряд без текста и интерактива
+- Видео без субтитров или текста на экране
+- Более 15 сториз в день
+- Частые внешние ссылки
+
+ФОРМАТЫ КОТОРЫЕ РАБОТАЮТ:
+- Опрос/голосование — низкий порог входа
+- ASMR процесс — звук без музыки
+- Лайфхак 15-30 сек — высокая ценность для сохранения
+- За кулисами — реальная жизнь без фильтров
+- Reveal стикер — контент скрыт пока не напишут в Direct
+- Q&A — собираешь вопросы и отвечаешь видео
+
+ЛОГИКА ДНЯ:
+- Вторник: глубокая польза, образование, стимулируй сохранения
+- Среда: социальное доказательство и ASMR, укрепление сообщества
+- Четверг: интрига и личное, эмоциональная близость
+
+Структура ответа — строго четыре блока:
+
+🎯 ИДЕЯ
+Одно предложение — что именно снимаешь под эту тему.
+
+📱 КАК СНИМАТЬ
+Конкретно: что в кадре, что говоришь, какой стикер. Напомни про текст на экране.
+
+⚡ ПОЧЕМУ СРАБОТАЕТ
+Какой алгоритмический сигнал это создаёт.
+
+🚫 НЕ ДЕЛАЙ
+Одна конкретная ошибка которую легко совершить с этой темой.`;
+
+  window.openStorizPanel = async function(themeTitle, dayLabel) {
+    const $c = document.getElementById('sp-content');
+    document.getElementById('sp-idea').textContent  = themeTitle;
+    document.getElementById('sp-badge').textContent = dayLabel;
+    $c.innerHTML = `<div class="sp-loader"><div class="sp-spinner"></div><div>Генерирую сториз…</div></div>`;
+    panel.classList.add('open');
+
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: STORIZ_SYSTEM_PROMPT },
+            { role: 'user',   content: `Тема: ${themeTitle}\nДень: ${dayLabel}` },
+          ],
+          max_tokens: 1000,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      renderResult(data.choices[0].message.content || '');
+    } catch (err) {
+      $c.innerHTML = `<div class="sp-error">Ошибка: ${x(err.message)}</div>`;
+    }
+  };
+
   function renderResult(text) {
     const $c = document.getElementById('sp-content');
-    const parts = text.split(/(?=🎯|📋|💬|🎬|📢)/);
+    const parts = text.split(/(?=🎯|📋|💬|🎬|📢|📱|⚡|🚫|💡|📌)/);
     if (parts.length <= 1) {
       $c.innerHTML = `<div class="sp-raw">${x(text)}</div>`;
       return;
@@ -1669,10 +1760,102 @@ if (firstDay) selectDay(firstDay);
 #storiz-view {
   display: none;
   flex: 1;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 24px;
+  gap: 20px;
 }
 #storiz-view.visible { display: flex; }
+
+#storiz-days { display: flex; flex-direction: column; gap: 16px; }
+#storiz-topics { display: none; flex-direction: column; gap: 16px; }
+#storiz-topics.visible { display: flex; }
+
+.storiz-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1A1714;
+}
+
+.storiz-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.storiz-day-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 4px;
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid #E8E0D8;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.storiz-day-card:not(.disabled):hover {
+  border-color: #D97757;
+  background: #FDF3EE;
+}
+.storiz-day-card.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.storiz-day-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1714;
+}
+.storiz-day-soon {
+  font-size: 9px;
+  font-weight: 600;
+  color: #8C7B6E;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.storiz-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8C7B6E;
+  cursor: pointer;
+  padding: 0;
+}
+.storiz-back:hover { color: #D97757; }
+
+.storiz-topic-card {
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid #E8E0D8;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.storiz-topic-card:hover {
+  border-color: #D97757;
+  background: #FDF3EE;
+}
+.storiz-topic-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1714;
+  margin-bottom: 4px;
+}
+.storiz-topic-desc {
+  font-size: 13px;
+  color: #6B5E54;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .storiz-days-grid { grid-template-columns: repeat(4, 1fr); }
+}
 
 /* Раздел сюжетов */
 #stories-view {
@@ -2232,6 +2415,63 @@ if (firstDay) selectDay(firstDay);
   document.getElementById('story-ideas-back').addEventListener('click', () => {
     storyIdeasView.classList.remove('visible');
     anglesView.classList.add('visible');
+  });
+
+})();
+</script>
+
+<!-- ===== СТОРИЗ LOGIC ===== -->
+<script>
+(function () {
+  'use strict';
+
+  const DAY_LABELS = { tue: 'Вторник', wed: 'Среда', thu: 'Четверг' };
+
+  const daysEl   = document.getElementById('storiz-days');
+  const topicsEl = document.getElementById('storiz-topics');
+  const titleEl  = document.getElementById('storiz-topics-title');
+  const listEl   = document.getElementById('storiz-topics-list');
+
+  function getTopics(day) {
+    if (day === 'tue') return (DATA.tue && DATA.tue.pains) || [];
+    if (day === 'wed') return (DATA.wed && DATA.wed.subtopics) || [];
+    if (day === 'thu') return (DATA.thu && DATA.thu.pains) || [];
+    return [];
+  }
+
+  function showTopics(day) {
+    const label  = DAY_LABELS[day];
+    const topics = getTopics(day);
+
+    titleEl.textContent = label;
+    listEl.innerHTML = '';
+
+    topics.forEach(topic => {
+      const card = document.createElement('div');
+      card.className = 'storiz-topic-card';
+      card.innerHTML = `
+        <div class="storiz-topic-title">${topic.title}</div>
+        ${topic.desc ? `<div class="storiz-topic-desc">${topic.desc}</div>` : ''}
+      `;
+      card.addEventListener('click', () => {
+        if (typeof window.openStorizPanel === 'function') {
+          window.openStorizPanel(topic.title, label);
+        }
+      });
+      listEl.appendChild(card);
+    });
+
+    daysEl.style.display = 'none';
+    topicsEl.classList.add('visible');
+  }
+
+  document.querySelectorAll('.storiz-day-card:not(.disabled)').forEach(card => {
+    card.addEventListener('click', () => showTopics(card.dataset.day));
+  });
+
+  document.getElementById('storiz-back').addEventListener('click', () => {
+    topicsEl.classList.remove('visible');
+    daysEl.style.display = '';
   });
 
 })();
