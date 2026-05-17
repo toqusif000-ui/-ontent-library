@@ -770,22 +770,30 @@ function reg(el, x, y, type, parentId = null) {
 /* ---- BUILD TYPE A (Вт, Чт): theme → pains → angles → ideas ---- */
 function buildA(data, day) {
   const root = reg(mkNode('theme', data.theme), 0, 0, 'theme');
-  const pAngles = fan(data.pains.length, Math.min(300, data.pains.length * 40), 0);
+  const pn = data.pains.length;
+  const pAngles = fan(pn, Math.min(300, pn * 40), 0);
+  const pRadius = Math.max(260, pn * 32);
 
   data.pains.forEach((pain, pi) => {
-    const [px, py] = polar(0, 0, 240, pAngles[pi]);
-    const pn = reg(mkNode('pain', clip(pain.title, 38)), px, py, 'pain', root.id);
+    const [px, py] = polar(0, 0, pRadius, pAngles[pi]);
+    const painNode = reg(mkNode('pain', clip(pain.title, 38)), px, py, 'pain', root.id);
 
-    const aAngles = fan(pain.angles.length, 130, pAngles[pi]);
+    const an = pain.angles.length;
+    const aSpread = Math.min(300, Math.max(60, an * 27));
+    const aRadius = Math.max(200, 170 + an * 9);
+    const aAngles = fan(an, aSpread, pAngles[pi]);
     pain.angles.forEach((ang, ai) => {
-      const [ax, ay] = polar(px, py, 185, aAngles[ai]);
-      const an = reg(mkNode('angle', ang.label), ax, ay, 'angle', pn.id);
+      const [ax, ay] = polar(px, py, aRadius, aAngles[ai]);
+      const angNode = reg(mkNode('angle', ang.label), ax, ay, 'angle', painNode.id);
 
-      const iAngles = fan(ang.ideas.length, 65, aAngles[ai]);
+      const cn = ang.ideas.length;
+      const iSpread = Math.min(280, Math.max(50, cn * 45));
+      const iRadius = Math.max(170, 150 + cn * 22);
+      const iAngles = fan(cn, iSpread, aAngles[ai]);
       ang.ideas.forEach((idea, ii) => {
-        const [cx, cy] = polar(ax, ay, 155, iAngles[ii]);
+        const [cx, cy] = polar(ax, ay, iRadius, iAngles[ii]);
         const gid = `${day}|${pain.id}|${ang.label}|${idea.id}`;
-        reg(mkCard(idea, [], gid), cx, cy, 'card', an.id);
+        reg(mkCard(idea, [], gid), cx, cy, 'card', angNode.id);
       });
     });
   });
@@ -795,25 +803,33 @@ function buildA(data, day) {
 /* ---- BUILD TYPE B (Ср): theme → subtopics → angles → ideas ---- */
 function buildB(data, day) {
   const root = reg(mkNode('theme', data.theme), 0, 0, 'theme');
-  const sAngles = fan(data.subtopics.length, Math.min(300, data.subtopics.length * 38), 0);
+  const sn = data.subtopics.length;
+  const sAngles = fan(sn, Math.min(300, sn * 38), 0);
+  const sRadius = Math.max(260, sn * 30);
 
   data.subtopics.forEach((sub, si) => {
-    const [sx, sy] = polar(0, 0, 240, sAngles[si]);
-    const sn = reg(mkNode('pain', clip(sub.title, 38)), sx, sy, 'pain', root.id);
+    const [sx, sy] = polar(0, 0, sRadius, sAngles[si]);
+    const subNode = reg(mkNode('pain', clip(sub.title, 38)), sx, sy, 'pain', root.id);
 
     const uniqueAngles = [...new Set(sub.ideas.flatMap(idea => Array.isArray(idea.angles) ? idea.angles : []))];
-    const aAnglesBranch = fan(uniqueAngles.length, 130, sAngles[si]);
+    const an = uniqueAngles.length;
+    const aSpread = Math.min(300, Math.max(60, an * 27));
+    const aRadius = Math.max(200, 170 + an * 9);
+    const aAnglesBranch = fan(an, aSpread, sAngles[si]);
 
     uniqueAngles.forEach((label, ai) => {
-      const [ax, ay] = polar(sx, sy, 185, aAnglesBranch[ai]);
-      const an = reg(mkNode('angle', label), ax, ay, 'angle', sn.id);
+      const [ax, ay] = polar(sx, sy, aRadius, aAnglesBranch[ai]);
+      const angNode = reg(mkNode('angle', label), ax, ay, 'angle', subNode.id);
 
       const matchingIdeas = sub.ideas.filter(idea => Array.isArray(idea.angles) && idea.angles.includes(label));
-      const iAnglesBranch = fan(matchingIdeas.length, 65, aAnglesBranch[ai]);
+      const cn = matchingIdeas.length;
+      const iSpread = Math.min(280, Math.max(50, cn * 45));
+      const iRadius = Math.max(170, 150 + cn * 22);
+      const iAnglesBranch = fan(cn, iSpread, aAnglesBranch[ai]);
       matchingIdeas.forEach((idea, ii) => {
-        const [cx, cy] = polar(ax, ay, 155, iAnglesBranch[ii]);
+        const [cx, cy] = polar(ax, ay, iRadius, iAnglesBranch[ii]);
         const gid = `${day}|${sub.id}|${label}|${idea.id}`;
-        reg(mkCard(idea, [], gid), cx, cy, 'card', an.id);
+        reg(mkCard(idea, [], gid), cx, cy, 'card', angNode.id);
       });
     });
   });
@@ -1248,20 +1264,20 @@ if (firstDay) selectDay(firstDay);
 
   /* ---- DATA ---- */
   const REELS = [
-    { name: 'Hook Swap',             desc: 'Начинаешь с 2-3 сек чужого вирального видео — потом резкий переход к себе. Мозг уже зацеплен, защита снята' },
-    { name: 'Niche Adjacent Posts',  desc: 'Берёшь актуальный мем или новость и связываешь с твоей темой. Охватывает людей которые на тебя не подписаны' },
-    { name: 'Silent Audio',          desc: 'Трендовое аудио резко обрывается — наступает тишина. Человек думает что сломался телефон и фокусируется на тексте' },
-    { name: 'Tasteful Rage Bait',    desc: 'Даёшь ценный контент но оставляешь намеренную мелкую ошибку. Люди пишут комментарии чтобы исправить — алгоритм взлетает' },
-    { name: "Partner's POV",         desc: 'Подруга снимает тебя трясущейся рукой и задаёт вопрос. Ты отвечаешь как в жизни. Ощущение подсмотренного разговора' },
-    { name: 'Generation Comparisons',desc: 'Показываешь как делали раньше vs как делаешь ты сейчас. Вызывает споры и самоидентификацию у разных поколений' },
+    { name: 'Гибридный крючок',      desc: 'Начинаешь с 2-3 сек чужого вирального видео — потом резкий переход к себе. Мозг уже зацеплен, защита снята' },
+    { name: 'Контекстная привязка',  desc: 'Берёшь актуальный мем или новость и связываешь с твоей темой. Охватывает людей которые на тебя не подписаны' },
+    { name: 'Манипуляция тишиной',   desc: 'Трендовое аудио резко обрывается — наступает тишина. Человек думает что сломался телефон и фокусируется на тексте' },
+    { name: 'Этичная провокация',    desc: 'Даёшь ценный контент но оставляешь намеренную мелкую ошибку. Люди пишут комментарии чтобы исправить — алгоритм взлетает' },
+    { name: 'Взгляд со стороны',     desc: 'Подруга снимает тебя трясущейся рукой и задаёт вопрос. Ты отвечаешь как в жизни. Ощущение подсмотренного разговора' },
+    { name: 'Смена парадигм',        desc: 'Показываешь как делали раньше vs как делаешь ты сейчас. Вызывает споры и самоидентификацию у разных поколений' },
   ];
   const CAROUSELS = [
-    { name: 'Step-by-Step Framework',desc: 'Один шаг — один слайд. Мозг вознаграждает за дохождение до конца. Последний слайд-резюме сохраняют чаще всего' },
-    { name: 'Myth vs Reality',        desc: 'Слайд с мифом — слайд с правдой и доказательством. Разрушаешь заблуждения и становишься экспертом которому доверяют' },
-    { name: 'Hot Take / Opinion',     desc: 'Провокационный тезис на первом слайде. Делишь аудиторию на своих и чужих. Комментарии взрываются спором' },
-    { name: 'Social Proof Funnel',    desc: 'История клиента по слайдам: было — проблема — решение — результат — отзыв. Зеркальные нейроны: люди хотят так же' },
-    { name: 'The Checklist / Audit',  desc: 'Чек-лист который хочется сохранить и использовать. Воспринимается как материальный актив который надо забрать' },
-    { name: 'Mixed Carousel',         desc: 'Чередуешь статичные слайды с короткими видео 5-10 сек. Переключение форматов перезагружает внимание и удерживает до конца' },
+    { name: 'Пошаговый алгоритм',    desc: 'Один шаг — один слайд. Мозг вознаграждает за дохождение до конца. Последний слайд-резюме сохраняют чаще всего' },
+    { name: 'Миф против правды',     desc: 'Слайд с мифом — слайд с правдой и доказательством. Разрушаешь заблуждения и становишься экспертом которому доверяют' },
+    { name: 'Провокационное мнение', desc: 'Провокационный тезис на первом слайде. Делишь аудиторию на своих и чужих. Комментарии взрываются спором' },
+    { name: 'Воронка доверия',       desc: 'История клиента по слайдам: было — проблема — решение — результат — отзыв. Зеркальные нейроны: люди хотят так же' },
+    { name: 'Чеклист и аудит',       desc: 'Чек-лист который хочется сохранить и использовать. Воспринимается как материальный актив который надо забрать' },
+    { name: 'Смешанный формат',      desc: 'Чередуешь статичные слайды с короткими видео 5-10 сек. Переключение форматов перезагружает внимание и удерживает до конца' },
   ];
 
   /* ---- STATE ---- */
