@@ -1094,7 +1094,7 @@ if (firstDay) selectDay(firstDay);
 
 /* ---- OVERLAY ---- */
 #format-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(250,249,247,0.97);
   backdrop-filter: blur(4px);
@@ -1388,7 +1388,7 @@ if (firstDay) selectDay(firstDay);
     <div id="fo-cards-wrap">
       <div id="fo-cards-grid"></div>
     </div>`;
-  document.getElementById('main').appendChild(overlay);
+  document.body.appendChild(overlay);
 
   /* ---- BUILD PANEL ---- */
   const panel = document.createElement('div');
