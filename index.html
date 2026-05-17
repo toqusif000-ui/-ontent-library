@@ -898,6 +898,49 @@ function redrawLines() {
   });
 }
 
+/* ---- OVERLAP RESOLUTION ---- */
+function isNodeVisible(nodeId) {
+  const n = NM[nodeId];
+  if (!n) return false;
+  if (!n.parentId) return true;
+  return EXP.has(n.parentId) && isNodeVisible(n.parentId);
+}
+
+function resolveOverlaps() {
+  const MIN_NODE = 150;
+  const MIN_CARD = 200;
+  const ITERS = 10;
+
+  const nodes = Object.values(NM).filter(n => isNodeVisible(n.id) && n.type !== 'theme');
+
+  for (let iter = 0; iter < ITERS; iter++) {
+    let anyMoved = false;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const minD = (a.type === 'card' || b.type === 'card') ? MIN_CARD : MIN_NODE;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        if (dist < minD) {
+          const push = (minD - dist) / 2;
+          const ux = dx / dist, uy = dy / dist;
+          a.x -= ux * push; a.y -= uy * push;
+          b.x += ux * push; b.y += uy * push;
+          anyMoved = true;
+        }
+      }
+    }
+    if (!anyMoved) break;
+  }
+
+  nodes.forEach(n => {
+    n.el.style.transition = 'opacity 300ms ease-in-out, transform 300ms ease-in-out, left 300ms ease-in-out, top 300ms ease-in-out';
+    n.el.style.left = n.x + 'px';
+    n.el.style.top  = n.y + 'px';
+  });
+}
+
 /* ---- NODE CLICK ---- */
 function onNodeClick(n) {
   if (n.type === 'theme' || n.type === 'card') return;
@@ -909,6 +952,7 @@ function onNodeClick(n) {
     EXP.add(n.id);
     n.el.classList.add('expanded');
     expandNode(n.id);
+    resolveOverlaps();
   }
   redrawLines();
   syncBackBtn();
@@ -957,6 +1001,7 @@ function selectDay(day) {
   setTimeout(() => {
     EXP.add(root.id);
     expandNode(root.id);
+    resolveOverlaps();
     redrawLines();
   }, 200);
 
