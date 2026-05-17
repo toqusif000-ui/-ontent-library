@@ -1363,6 +1363,10 @@ if (firstDay) selectDay(firstDay);
   let foIdeaText  = '';
   let foTypeLabel = '';
   let foFmtName   = '';
+  let storyMode   = false;
+
+  const STORY_REELS     = REELS.filter(f => ['Взгляд со стороны','Смена парадигм','Манипуляция тишиной'].includes(f.name));
+  const STORY_CAROUSELS = CAROUSELS.filter(f => ['Воронка доверия','Смешанный формат','Пошаговый алгоритм'].includes(f.name));
 
   /* ---- BUILD OVERLAY ---- */
   const overlay = document.createElement('div');
@@ -1433,7 +1437,14 @@ if (firstDay) selectDay(firstDay);
 
   window.openOverlay = openOverlay;
 
+  function openStoryOverlay(ideaText) {
+    storyMode = true;
+    openOverlay(ideaText);
+  }
+  window.openStoryOverlay = openStoryOverlay;
+
   function closeOverlay() {
+    storyMode = false;
     overlay.classList.remove('visible');
     document.querySelectorAll('.btn-formats').forEach(b => b.remove());
   }
@@ -1455,7 +1466,7 @@ if (firstDay) selectDay(firstDay);
 
       const grid = document.getElementById('fo-cards-grid');
       grid.innerHTML = '';
-      const list = type === 'РИЛС' ? REELS : CAROUSELS;
+      const list = type === 'РИЛС' ? (storyMode ? STORY_REELS : REELS) : (storyMode ? STORY_CAROUSELS : CAROUSELS);
       list.forEach((fmt, i) => {
         const card = document.createElement('div');
         card.className = 'format-card';
@@ -2116,7 +2127,7 @@ if (firstDay) selectDay(firstDay);
         `;
         card.querySelector('.story-idea-btn').addEventListener('click', e => {
           const ideaText = e.target.dataset.idea;
-          if (typeof window.openOverlay === 'function') window.openOverlay(ideaText);
+          if (typeof window.openStoryOverlay === 'function') window.openStoryOverlay(ideaText);
         });
         list.appendChild(card);
       });
