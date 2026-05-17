@@ -1555,5 +1555,95 @@ if (firstDay) selectDay(firstDay);
 })();
 </script>
 
+<!-- ===== NODE DRAG ===== -->
+<style>
+.node, .idea-card { cursor: grab; }
+</style>
+<script>
+(function () {
+  let nd = null; // active node-drag state
+
+  function subtreeIds(nodeId, acc) {
+    acc = acc || [];
+    acc.push(nodeId);
+    const n = NM[nodeId];
+    if (n) n.children.forEach(cid => subtreeIds(cid, acc));
+    return acc;
+  }
+
+  function initDrag(clientX, clientY, n) {
+    const ids = subtreeIds(n.id);
+    const offsets = {};
+    ids.forEach(id => {
+      const node = NM[id];
+      if (!node) return;
+      offsets[id] = { dx: node.x - n.x, dy: node.y - n.y };
+      // remove position transition so drag is instant
+      node.el.style.transition = 'opacity 300ms ease-in-out, transform 300ms ease-in-out';
+    });
+    nd = { startX: clientX, startY: clientY, baseX: n.x, baseY: n.y, offsets, moved: false };
+  }
+
+  function applyDrag(clientX, clientY) {
+    const dx = (clientX - nd.startX) / V.s;
+    const dy = (clientY - nd.startY) / V.s;
+    if (!nd.moved && Math.hypot(dx, dy) > 4) nd.moved = true;
+    if (!nd.moved) return;
+    const bx = nd.baseX + dx, by = nd.baseY + dy;
+    Object.entries(nd.offsets).forEach(([id, off]) => {
+      const node = NM[id];
+      if (!node) return;
+      node.x = bx + off.dx;
+      node.y = by + off.dy;
+      node.el.style.left = node.x + 'px';
+      node.el.style.top  = node.y + 'px';
+    });
+    redrawLines();
+  }
+
+  function endDrag() {
+    if (!nd) return;
+    if (nd.moved) window.addEventListener('click', e => e.stopPropagation(), { capture: true, once: true });
+    nd = null;
+    document.documentElement.style.cursor = '';
+  }
+
+  // ---- Mouse ----
+  $mn.addEventListener('mousedown', e => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    const el = e.target.closest('.node, .idea-card');
+    if (!el) return;
+    const n = NM[el.dataset.nid];
+    if (!n) return;
+    e.stopPropagation();
+    initDrag(e.clientX, e.clientY, n);
+    document.documentElement.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', e => { if (nd) applyDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', endDrag);
+
+  // ---- Touch ----
+  $mn.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target.closest('button')) return;
+    const el = e.target.closest('.node, .idea-card');
+    if (!el) return;
+    const n = NM[el.dataset.nid];
+    if (!n) return;
+    e.stopPropagation();
+    const t = e.touches[0];
+    initDrag(t.clientX, t.clientY, n);
+  }, { passive: true });
+
+  window.addEventListener('touchmove', e => {
+    if (!nd || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    applyDrag(t.clientX, t.clientY);
+  }, { passive: true });
+
+  window.addEventListener('touchend', endDrag);
+})();
+</script>
+
 </body>
 </html>
