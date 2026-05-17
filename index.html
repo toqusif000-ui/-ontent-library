@@ -565,7 +565,8 @@
   <!-- TABS HEADER -->
   <div class="tabs-header">
     <button class="tab-btn active" data-tab="ideas">Идеи</button>
-    <button class="tab-btn" data-tab="stories">Сториз</button>
+    <button class="tab-btn" data-tab="stories">Сюжеты</button>
+    <button class="tab-btn" data-tab="storiz">Сториз</button>
   </div>
 
   <!-- MAIN: карта -->
@@ -623,6 +624,14 @@
     <button class="story-ideas-back" id="story-ideas-back">← Назад к углам</button>
     <div class="story-ideas-title" id="story-ideas-title"></div>
     <div id="story-ideas-list"></div>
+  </div>
+
+  <!-- СТОРИЗ: заглушка -->
+  <div id="storiz-view">
+    <div class="placeholder">
+      <div class="placeholder-icon">🌿</div>
+      <div class="placeholder-title">Скоро появится</div>
+    </div>
   </div>
 
   </div><!-- /content-wrapper -->
@@ -1657,6 +1666,14 @@ if (firstDay) selectDay(firstDay);
   overflow: hidden;
 }
 
+#storiz-view {
+  display: none;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+}
+#storiz-view.visible { display: flex; }
+
 /* Раздел сюжетов */
 #stories-view {
   display: none;
@@ -1999,18 +2016,20 @@ if (firstDay) selectDay(firstDay);
   let currentAngle = null;
 
   // Элементы
-  const tabBtns     = document.querySelectorAll('.tab-btn');
-  const ideasSection = document.getElementById('main');
-  const storiesView  = document.getElementById('stories-view');
-  const momentsView  = document.getElementById('moments-view');
-  const anglesView   = document.getElementById('angles-view');
+  const tabBtns      = document.querySelectorAll('.tab-btn');
+  const ideasSection  = document.getElementById('main');
+  const storiesView   = document.getElementById('stories-view');
+  const momentsView   = document.getElementById('moments-view');
+  const anglesView    = document.getElementById('angles-view');
   const storyIdeasView = document.getElementById('story-ideas-view');
+  const storizView    = document.getElementById('storiz-view');
 
   function hideAllStoryViews() {
     storiesView.classList.remove('visible');
     momentsView.classList.remove('visible');
     anglesView.classList.remove('visible');
     storyIdeasView.classList.remove('visible');
+    storizView.classList.remove('visible');
   }
 
   // Переключение вкладок
@@ -2021,10 +2040,14 @@ if (firstDay) selectDay(firstDay);
       if (btn.dataset.tab === 'ideas') {
         hideAllStoryViews();
         ideasSection.style.display = '';
-      } else {
+      } else if (btn.dataset.tab === 'stories') {
         ideasSection.style.display = 'none';
         hideAllStoryViews();
         showStoriesList();
+      } else if (btn.dataset.tab === 'storiz') {
+        ideasSection.style.display = 'none';
+        hideAllStoryViews();
+        storizView.classList.add('visible');
       }
     });
   });
