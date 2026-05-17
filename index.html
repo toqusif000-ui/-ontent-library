@@ -792,7 +792,7 @@ function buildA(data, day) {
   return root;
 }
 
-/* ---- BUILD TYPE B (Ср): theme → subtopics → ideas → angles ---- */
+/* ---- BUILD TYPE B (Ср): theme → subtopics → angles → ideas ---- */
 function buildB(data, day) {
   const root = reg(mkNode('theme', data.theme), 0, 0, 'theme');
   const sAngles = fan(data.subtopics.length, Math.min(300, data.subtopics.length * 38), 0);
@@ -801,16 +801,19 @@ function buildB(data, day) {
     const [sx, sy] = polar(0, 0, 240, sAngles[si]);
     const sn = reg(mkNode('pain', clip(sub.title, 38)), sx, sy, 'pain', root.id);
 
-    const iAnglesBranch = fan(sub.ideas.length, 130, sAngles[si]);
-    sub.ideas.forEach((idea, ii) => {
-      const [ix, iy] = polar(sx, sy, 185, iAnglesBranch[ii]);
-      const ideaNode = reg(mkNode('idea', clip(idea.text, 36)), ix, iy, 'idea', sn.id);
+    const uniqueAngles = [...new Set(sub.ideas.flatMap(idea => Array.isArray(idea.angles) ? idea.angles : []))];
+    const aAnglesBranch = fan(uniqueAngles.length, 130, sAngles[si]);
 
-      const labels = Array.isArray(idea.angles) ? idea.angles : [];
-      const leafAngles = fan(labels.length, 60, iAnglesBranch[ii]);
-      labels.forEach((label, li) => {
-        const [ax, ay] = polar(ix, iy, 145, leafAngles[li]);
-        reg(mkNode('angle', label), ax, ay, 'angle', ideaNode.id);
+    uniqueAngles.forEach((label, ai) => {
+      const [ax, ay] = polar(sx, sy, 185, aAnglesBranch[ai]);
+      const an = reg(mkNode('angle', label), ax, ay, 'angle', sn.id);
+
+      const matchingIdeas = sub.ideas.filter(idea => Array.isArray(idea.angles) && idea.angles.includes(label));
+      const iAnglesBranch = fan(matchingIdeas.length, 65, aAnglesBranch[ai]);
+      matchingIdeas.forEach((idea, ii) => {
+        const [cx, cy] = polar(ax, ay, 155, iAnglesBranch[ii]);
+        const gid = `${day}|${sub.id}|${label}|${idea.id}`;
+        reg(mkCard(idea, [], gid), cx, cy, 'card', an.id);
       });
     });
   });
@@ -896,14 +899,13 @@ function onNodeClick(n) {
 }
 
 function syncBackBtn() {
-  // Type A: angle nodes expanded → show back; Type B: idea nodes expanded → show back
-  const deep = [...EXP].some(id => NM[id] && (NM[id].type === 'angle' || NM[id].type === 'idea'));
+  const deep = [...EXP].some(id => NM[id] && NM[id].type === 'angle');
   $back.classList.toggle('visible', deep);
 }
 
 $back.addEventListener('click', () => {
   Object.values(NM).forEach(n => {
-    if ((n.type === 'angle' || n.type === 'idea') && EXP.has(n.id)) {
+    if (n.type === 'angle' && EXP.has(n.id)) {
       EXP.delete(n.id);
       n.el.classList.remove('expanded');
       collapseRec(n.id);
@@ -978,26 +980,6 @@ if (firstDay) selectDay(firstDay);
 
 <!-- ===== FORMATS EXTENSION: стили ===== -->
 <style>
-/* ---- IDEA NODE (Тип B: промежуточный уровень) ---- */
-.node-idea .node-inner {
-  background: var(--node-angle);
-  border-color: var(--border-muted);
-  padding: 8px 14px;
-  min-width: 90px;
-  max-width: 170px;
-}
-.node-idea .node-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.35;
-}
-.node-idea.expanded .node-inner {
-  background: var(--accent-light);
-  border-color: var(--accent);
-}
-.node-idea.expanded .node-label { color: var(--accent); }
-
 .btn-formats {
   display: block;
   width: 100%;
