@@ -9,6 +9,7 @@
   <script src="data/tue.js"></script>
   <script src="data/thu.js"></script>
   <script src="data/index.js"></script>
+  <script src="data/stories.js"></script>
 
   <style>
     /* ===== ДАННЫЕ =====
@@ -518,6 +519,12 @@
 
 <div class="app">
 
+  <!-- TABS HEADER -->
+  <div class="tabs-header">
+    <button class="tab-btn active" data-tab="ideas">Идеи</button>
+    <button class="tab-btn" data-tab="stories">Сюжеты</button>
+  </div>
+
   <!-- SIDEBAR: список дней -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-label">Дни</div>
@@ -588,6 +595,32 @@
     </div>
 
   </main>
+</div>
+
+<!-- СЮЖЕТЫ: список линий -->
+<div id="stories-view">
+</div>
+
+<!-- СЮЖЕТЫ: моменты -->
+<div id="moments-view">
+  <button class="moments-back" id="moments-back">← Назад к сюжетам</button>
+  <div class="moments-title" id="moments-title"></div>
+  <div class="moments-subtitle">Выбери момент — нейросеть предложит идеи</div>
+  <div id="moments-list"></div>
+</div>
+
+<!-- СЮЖЕТЫ: углы подачи -->
+<div id="angles-view">
+  <button class="angles-back" id="angles-back">← Назад к моментам</button>
+  <div class="angles-title" id="angles-title"></div>
+  <div id="angles-list"></div>
+</div>
+
+<!-- СЮЖЕТЫ: идеи от нейросети -->
+<div id="story-ideas-view">
+  <button class="story-ideas-back" id="story-ideas-back">← Назад к углам</button>
+  <div class="story-ideas-title" id="story-ideas-title"></div>
+  <div id="story-ideas-list"></div>
 </div>
 
 <script>
@@ -1397,6 +1430,8 @@ if (firstDay) selectDay(firstDay);
     setTimeout(() => { rev('fo-b2','fo-l2'); },   230);
   }
 
+  window.openOverlay = openOverlay;
+
   function closeOverlay() {
     overlay.classList.remove('visible');
     document.querySelectorAll('.btn-formats').forEach(b => b.remove());
@@ -1571,6 +1606,274 @@ if (firstDay) selectDay(firstDay);
 })();
 </script>
 
+<!-- ===== STORIES & TABS ===== -->
+<style>
+/* Вкладки */
+.tabs-header {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E8E0D8;
+  background: #FAF9F7;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #8C7B6E;
+  transition: all 150ms;
+}
+.tab-btn.active {
+  background: #D97757;
+  color: white;
+}
+
+/* Раздел сюжетов */
+#stories-view {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  gap: 16px;
+  flex-direction: column;
+}
+#stories-view.visible { display: flex; }
+
+.story-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: box-shadow 150ms, transform 150ms;
+  border: 2px solid transparent;
+}
+.story-card:hover {
+  box-shadow: 0 4px 16px rgba(217,119,87,0.15);
+  transform: translateY(-2px);
+  border-color: #D97757;
+}
+.story-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1A1714;
+  margin-bottom: 8px;
+}
+.story-card-desc {
+  font-size: 13px;
+  color: #5C4F44;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.story-card-why {
+  font-size: 12px;
+  color: #8C7B6E;
+  line-height: 1.5;
+  padding-top: 10px;
+  border-top: 1px solid #F0E8E0;
+}
+
+/* Моменты */
+#moments-view {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  flex-direction: column;
+  gap: 12px;
+}
+#moments-view.visible { display: flex; }
+
+.moments-back {
+  background: none;
+  border: none;
+  color: #D97757;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  text-align: left;
+}
+.moments-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1714;
+  margin-bottom: 4px;
+}
+.moments-subtitle {
+  font-size: 12px;
+  color: #8C7B6E;
+  margin-bottom: 16px;
+}
+.moment-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: box-shadow 150ms, border-color 150ms;
+  border: 2px solid transparent;
+}
+.moment-item:hover {
+  border-color: #D97757;
+  box-shadow: 0 4px 12px rgba(217,119,87,0.12);
+}
+.moment-num {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: #F5E6E0;
+  color: #D97757;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.moment-text { flex: 1; }
+.moment-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1714;
+  margin-bottom: 4px;
+}
+.moment-desc {
+  font-size: 12px;
+  color: #8C7B6E;
+  line-height: 1.5;
+}
+
+/* Углы подачи */
+#angles-view {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  flex-direction: column;
+  gap: 12px;
+}
+#angles-view.visible { display: flex; }
+
+.angles-back {
+  background: none;
+  border: none;
+  color: #D97757;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  text-align: left;
+}
+.angles-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1A1714;
+  margin-bottom: 16px;
+}
+.angle-btn {
+  background: white;
+  border: 2px solid #E8E0D8;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1714;
+  cursor: pointer;
+  text-align: left;
+  transition: all 150ms;
+}
+.angle-btn:hover {
+  border-color: #D97757;
+  color: #D97757;
+  background: #FDF6F3;
+}
+
+/* Идеи от нейросети */
+#story-ideas-view {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  flex-direction: column;
+  gap: 12px;
+}
+#story-ideas-view.visible { display: flex; }
+
+.story-ideas-back {
+  background: none;
+  border: none;
+  color: #D97757;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  text-align: left;
+}
+.story-ideas-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1714;
+  margin-bottom: 16px;
+}
+.story-idea-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 150ms;
+}
+.story-idea-card:hover {
+  border-color: #D97757;
+  box-shadow: 0 4px 12px rgba(217,119,87,0.12);
+}
+.story-idea-text {
+  font-size: 14px;
+  color: #1A1714;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.story-idea-btn {
+  background: #D97757;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.story-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: #8C7B6E;
+  font-size: 13px;
+}
+.story-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #E8E0D8;
+  border-top-color: #D97757;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <!-- ===== NODE DRAG ===== -->
 <style>
 .node, .idea-card { cursor: grab; }
@@ -1658,6 +1961,183 @@ if (firstDay) selectDay(firstDay);
   }, { passive: true });
 
   window.addEventListener('touchend', endDrag);
+})();
+</script>
+
+<!-- ===== STORIES LOGIC ===== -->
+<script>
+(function () {
+  'use strict';
+
+  // Состояние
+  let currentStory = null;
+  let currentMoment = null;
+  let currentAngle = null;
+
+  // Элементы
+  const tabBtns     = document.querySelectorAll('.tab-btn');
+  const ideasSection = document.getElementById('main');
+  const storiesView  = document.getElementById('stories-view');
+  const momentsView  = document.getElementById('moments-view');
+  const anglesView   = document.getElementById('angles-view');
+  const storyIdeasView = document.getElementById('story-ideas-view');
+
+  function hideAllStoryViews() {
+    storiesView.classList.remove('visible');
+    momentsView.classList.remove('visible');
+    anglesView.classList.remove('visible');
+    storyIdeasView.classList.remove('visible');
+  }
+
+  // Переключение вкладок
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (btn.dataset.tab === 'ideas') {
+        hideAllStoryViews();
+        ideasSection.style.display = '';
+      } else {
+        ideasSection.style.display = 'none';
+        hideAllStoryViews();
+        showStoriesList();
+      }
+    });
+  });
+
+  // Список сюжетов
+  function showStoriesList() {
+    storiesView.innerHTML = '';
+    STORIES.forEach(story => {
+      const card = document.createElement('div');
+      card.className = 'story-card';
+      card.innerHTML = `
+        <div class="story-card-title">${story.title}</div>
+        <div class="story-card-desc">${story.desc}</div>
+        <div class="story-card-why">💡 ${story.why}</div>
+      `;
+      card.addEventListener('click', () => showMoments(story));
+      storiesView.appendChild(card);
+    });
+    storiesView.classList.add('visible');
+  }
+
+  // Моменты сюжета
+  function showMoments(story) {
+    currentStory = story;
+    storiesView.classList.remove('visible');
+    document.getElementById('moments-title').textContent = story.title;
+    const list = document.getElementById('moments-list');
+    list.innerHTML = '';
+    story.moments.forEach(moment => {
+      const item = document.createElement('div');
+      item.className = 'moment-item';
+      item.innerHTML = `
+        <div class="moment-num">${moment.id}</div>
+        <div class="moment-text">
+          <div class="moment-title">${moment.title}</div>
+          <div class="moment-desc">${moment.desc}</div>
+        </div>
+      `;
+      item.addEventListener('click', () => showAngles(moment));
+      list.appendChild(item);
+    });
+    momentsView.classList.add('visible');
+  }
+
+  // Углы подачи
+  function showAngles(moment) {
+    currentMoment = moment;
+    momentsView.classList.remove('visible');
+    document.getElementById('angles-title').textContent = `Угол подачи для: «${moment.title}»`;
+    const list = document.getElementById('angles-list');
+    list.innerHTML = '';
+    currentStory.angles.forEach(angle => {
+      const btn = document.createElement('button');
+      btn.className = 'angle-btn';
+      btn.textContent = angle;
+      btn.addEventListener('click', () => generateStoryIdeas(angle));
+      list.appendChild(btn);
+    });
+    anglesView.classList.add('visible');
+  }
+
+  // Генерация идей нейросетью
+  async function generateStoryIdeas(angle) {
+    currentAngle = angle;
+    anglesView.classList.remove('visible');
+    document.getElementById('story-ideas-title').textContent = `Идеи: «${currentMoment.title}» — ${angle}`;
+    const list = document.getElementById('story-ideas-list');
+    list.innerHTML = `<div class="story-loader"><div class="story-spinner"></div><div>Генерирую идеи…</div></div>`;
+    storyIdeasView.classList.add('visible');
+
+    const prompt = `Ты помощник Даши — кондитера с пятилетним опытом, Instagram-блогер.
+
+Сюжетная линия: «${currentStory.title}»
+Момент: «${currentMoment.title}» — ${currentMoment.desc}
+Угол подачи: ${angle}
+
+Придумай 3 конкретные идеи для контента под этот момент и угол подачи.
+Стиль Даши: живой, разговорный, с юмором, без пафоса, как подруга рассказывает подруге.
+
+Отвечай СТРОГО в формате JSON — массив из 3 объектов:
+[
+  {"title": "короткое название идеи", "desc": "одно предложение — суть идеи конкретно"},
+  {"title": "...", "desc": "..."},
+  {"title": "...", "desc": "..."}
+]
+Только JSON, без пояснений.`;
+
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.choices[0].message.content;
+      const ideas = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+      list.innerHTML = '';
+      ideas.forEach(idea => {
+        const card = document.createElement('div');
+        card.className = 'story-idea-card';
+        card.innerHTML = `
+          <div class="story-idea-text"><strong>${idea.title}</strong><br>${idea.desc}</div>
+          <button class="story-idea-btn" data-idea="${idea.title} — ${idea.desc}">✦ Создать сценарий</button>
+        `;
+        card.querySelector('.story-idea-btn').addEventListener('click', e => {
+          const ideaText = e.target.dataset.idea;
+          if (typeof window.openOverlay === 'function') window.openOverlay(ideaText);
+        });
+        list.appendChild(card);
+      });
+    } catch (err) {
+      list.innerHTML = `<div style="color:#c5603f;padding:16px;">Ошибка генерации. Попробуй ещё раз.</div>`;
+    }
+  }
+
+  // Навигация назад
+  document.getElementById('moments-back').addEventListener('click', () => {
+    momentsView.classList.remove('visible');
+    showStoriesList();
+  });
+  document.getElementById('angles-back').addEventListener('click', () => {
+    anglesView.classList.remove('visible');
+    momentsView.classList.add('visible');
+  });
+  document.getElementById('story-ideas-back').addEventListener('click', () => {
+    storyIdeasView.classList.remove('visible');
+    anglesView.classList.add('visible');
+  });
+
 })();
 </script>
 
